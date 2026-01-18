@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 7%;
+    --foreground: 213 31% 91%;
+    --muted: 215 20% 65%;
+    --accent: 217 91% 60%;
+    --border: 217 19% 27% / 0.4;
+    --card: 222 47% 10%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', system-ui, sans-serif; /* Professional standard */
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* This creates that "Apple-style" clean card */
+  .glass-card {
+    @apply bg-opacity-20 border border-white/10 backdrop-blur-md;
+    background-color: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg 
+           transition-all duration-200 font-medium shadow-lg shadow-blue-500/20
+           active:scale-95 disabled:opacity-50;
+  }
+
+  
+  }
+@layer components {
+  .input-field {
+    /* Use a very subtle white tint over your dark navy background */
+    @apply bg-white/5 border border-white/10 text-white rounded-lg;
+    @apply px-4 py-2 transition-all duration-200 outline-none;
+    @apply placeholder:text-gray-500;
+  }
+
+  .input-field:focus {
+    /* Add a soft glow when the user clicks in */
+    @apply border-blue-500/50 bg-white/[0.08] ring-4 ring-blue-500/10;
+  }
+}
+@layer base {
+  /* 🚨 FORCE DARK MODE ON ALL FORM ELEMENTS */
+  input, select, textarea {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+
+  /* 🛑 FIX THE "WHITE AUTOFILL" BUG */
+  /* This prevents Chrome from turning your dark inputs white when it autofills passwords/emails */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus, 
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0px 1000px #0b1220 inset; /* Matches your background color */
+    transition: background-color 5000s ease-in-out 0s;
+  }
+}
+@layer base {
+  /* 1. Force all inputs and selects to be dark glass */
+  input, 
+  textarea, 
+  select {
+    background-color: #111827 !important; /* Dark Gray/Blue */
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+
+  /* 2. FIX THE WHITE DROPDOWN MENU */
+  /* This targets the actual list that pops up when you click Select */
+  select option {
+    background-color: #111827 !important;
+    color: white !important;
+  }
+
+  /* 3. Stop the blue/white autofill background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus, 
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0px 1000px #111827 inset;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+}

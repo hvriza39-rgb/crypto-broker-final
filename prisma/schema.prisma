@@ -1,0 +1,36 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // We are using SQLite for simplicity so you don't need to install a database server.
+  // If you are using MongoDB or PostgreSQL, change this provider.
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id               String        @id @default(uuid())
+  email            String        @unique
+  password         String
+  portfolioBalance Float         @default(0)
+  availableBalance Float         @default(0)
+  pnl              Float         @default(0)
+  createdAt        DateTime      @default(now())
+  
+  transactions     Transaction[]
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  type      String   // e.g., 'Deposit', 'Withdrawal'
+  asset     String   // e.g., 'BTC', 'USD'
+  amount    Float
+  status    String   // e.g., 'Pending', 'Completed'
+  createdAt DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}

@@ -1,0 +1,75 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import Button from '@components/ui/Button';
+import Card from '@components/ui/Card';
+import Input from '@components/ui/Input';
+import InlineAlert from '@components/ui/InlineAlert';
+
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const redirect = sp.get('redirect') || '/admin/users';
+
+  const [email, setEmail] = useState('admin@broker.com');
+  const [password, setPassword] = useState('Admin123!');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Login failed');
+      }
+
+      router.push(redirect);
+    } catch (err: any) {
+      setError(err?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg p-4">
+      <div className="w-full max-w-md">
+        <Card className="p-6">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <h1 className="text-xl font-semibold">Admin Login</h1>
+              <p className="text-sm text-muted mt-1">Sign in to manage users and transactions.</p>
+            </div>
+
+            {error && <InlineAlert variant="error">{error}</InlineAlert>}
+
+            <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <Button type="submit" className="w-full" loading={loading} disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </Button>
+
+           
+          </form>
+        </Card>
+      </div>
+    </div>
+  );
+}
