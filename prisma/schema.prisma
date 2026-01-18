@@ -5,32 +5,32 @@ generator client {
 }
 
 datasource db {
-  // We are using SQLite for simplicity so you don't need to install a database server.
-  // If you are using MongoDB or PostgreSQL, change this provider.
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id               String        @id @default(uuid())
-  email            String        @unique
+  // MongoDB uses _id and ObjectId type
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  email            String   @unique
   password         String
-  portfolioBalance Float         @default(0)
-  availableBalance Float         @default(0)
-  pnl              Float         @default(0)
-  createdAt        DateTime      @default(now())
+  portfolioBalance Float    @default(0)
+  availableBalance Float    @default(0)
+  pnl              Float    @default(0)
+  createdAt        DateTime @default(now())
   
   transactions     Transaction[]
 }
 
 model Transaction {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   type      String   // e.g., 'Deposit', 'Withdrawal'
   asset     String   // e.g., 'BTC', 'USD'
   amount    Float
   status    String   // e.g., 'Pending', 'Completed'
   createdAt DateTime @default(now())
   
-  userId    String
+  // This must match the User ID type (ObjectId)
+  userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id])
 }
