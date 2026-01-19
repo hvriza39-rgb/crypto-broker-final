@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const USER_COOKIE = 'user_session';
-const ADMIN_COOKIE_NAME = process.env.ADMINACCESSTOKENNAME || 'admin_access_token';
+// 👇 FIX 1: Change this to match the cookie name we set in the Login Page
+const COOKIE_NAME = 'token';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Retrieve the token (ticket) from the user's browser
+  const token = req.cookies.get(COOKIE_NAME)?.value;
 
   // 1. ---- Admin Guard (Pages & API) ----
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
@@ -14,9 +17,8 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-
-    if (!adminToken) {
+    // Check if the token exists
+    if (!token) {
       // If it's an API call, return a JSON error instead of a redirect
       if (pathname.startsWith('/api/')) {
         return new NextResponse(
@@ -25,10 +27,9 @@ export function middleware(req: NextRequest) {
         );
       }
       
-      // If it's a page, redirect to login
+      // If it's a page, redirect to admin login
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
-      url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
     }
   }
@@ -39,18 +40,29 @@ export function middleware(req: NextRequest) {
   ].some(path => pathname.startsWith(path));
 
   if (isProtected) {
-    const session = req.cookies.get(USER_COOKIE)?.value;
-    if (!session) {
+    // If trying to visit dashboard without a token, kick them out
+    if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = '/login';
       return NextResponse.redirect(url);
     }
   }
 
+  // 3. ---- Prevent Logged-in Users from seeing Login Page ----
+  // If they HAVE a token but visit /login, send them to dashboard
+  if ((pathname === '/login' || pathname === '/admin/login') && token) {
+     const url = req.nextUrl.clone();
+     if (pathname.startsWith('/admin')) {
+        url.pathname = '/admin/users';
+     } else {
+        url.pathname = '/dashboard';
+     }
+     return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
-// Fixed Matcher: Added /api/admin to ensure API calls are also guarded
 export const config = {
   matcher: [
     '/dashboard/:path*',
@@ -59,6 +71,8 @@ export const config = {
     '/trade/:path*',
     '/settings/:path*',
     '/admin/:path*',
-    '/api/admin/:path*', // Added this
+    '/api/admin/:path*',
+    '/login',
+    '/admin/login'
   ],
 };
