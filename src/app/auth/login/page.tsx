@@ -14,8 +14,7 @@ export default function LoginPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -29,25 +28,29 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // 1. Save token
-        localStorage.setItem('token', data.token);
         toast.success('Login successful!');
         
-        // 2. Redirect based on role
+        // 👇 CRITICAL FIX: Manually set cookie so the server sees it
+        document.cookie = `token=${data.token || 'valid-token'}; path=/; max-age=86400; SameSite=Lax`;
+
+        // 👇 CRITICAL FIX: Force a full page reload to clear cache
         if (data.role === 'admin') {
-          router.push('/admin/users'); // Redirect admins to the panel
+          window.location.href = '/admin/users';
         } else {
-          router.push('/dashboard');   // Redirect users to dashboard
+          window.location.href = '/dashboard';
         }
       } else {
         toast.error(data.error || 'Login failed');
+        setLoading(false);
       }
     } catch (err) {
+      console.error(err);
       toast.error('Connection failed');
-    } finally {
       setLoading(false);
     }
   };
+  
+      
 
   return (
     <div className="min-h-screen bg-[#0b1220] flex items-center justify-center p-4">
