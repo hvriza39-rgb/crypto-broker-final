@@ -1,8 +1,8 @@
-// File: C:\Users\user\Documents\web-upload\crypto-broker-dashboard-with-admin-connected-backend\app\api\user\profile\route.ts
-import * as entry from '../../../../../../app/api/user/profile/route.js'
+// File: C:\Users\user\Documents\web-upload\crypto-broker-dashboard-with-admin-connected-backend\src\app\api\user\profile\route.ts
+import * as entry from '../../../../../../src/app/api/user/profile/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../app/api/user/profile/route.js')
+type TEntry = typeof import('../../../../../../src/app/api/user/profile/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

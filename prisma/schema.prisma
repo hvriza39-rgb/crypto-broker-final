@@ -10,14 +10,20 @@ datasource db {
 }
 
 model User {
-  // MongoDB uses _id and ObjectId type
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  email            String   @unique
-  password         String
-  portfolioBalance Float    @default(0)
-  availableBalance Float    @default(0)
-  pnl              Float    @default(0)
-  createdAt        DateTime @default(now())
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  email            String        @unique
+  hashedPassword   String
+  name             String?
+  phone            String?
+  country          String?
+  
+  // Financial Data
+  portfolioBalance Float         @default(0.0)
+  availableBalance Float         @default(0.0)
+  pnl              Float         @default(0.0)
+  
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   
   transactions     Transaction[]
 }
@@ -30,7 +36,6 @@ model Transaction {
   status    String   // e.g., 'Pending', 'Completed'
   createdAt DateTime @default(now())
   
-  // This must match the User ID type (ObjectId)
   userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id])
 }
