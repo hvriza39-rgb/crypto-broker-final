@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Card from '@components/ui/Card';
-import Input from '@components/ui/Input';
-import Select from '@components/ui/Select';
-import Button from '@components/ui/Button';
-import InlineAlert from '@components/ui/InlineAlert';
-import Modal from '@components/ui/Modal';
+
+// 👇 FIX: Using relative paths (4 levels up) instead of "@/"
+import Card from '../../../../components/ui/Card';
+import Input from '../../../../components/ui/Input';
+import Select from '../../../../components/ui/Select';
+import Button from '../../../../components/ui/Button';
+import InlineAlert from '../../../../components/ui/InlineAlert';
+import Modal from '../../../../components/ui/Modal';
 
 type UserForm = {
   id: string;
@@ -194,17 +196,19 @@ export default function AdminUserDetailPage() {
             <option value="rejected">Rejected</option>
           </Select>
 
-          <div>
-            <label className="block text-sm mb-1 text-muted">Balance</label>
-            <div className="flex gap-2">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
               <Input
+                label="Balance" 
                 value={`$${form.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 readOnly
-                className="flex-1"
               />
+            </div>
+            <div className="mb-[2px]">
               <Button onClick={() => setBalanceModalOpen(true)}>Adjust</Button>
             </div>
           </div>
+          
           <Input label="Created at" value={new Date(form.createdAt).toLocaleString()} readOnly />
         </div>
 

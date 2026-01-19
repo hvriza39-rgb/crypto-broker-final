@@ -1,43 +1,23 @@
 import { NextResponse } from 'next/server';
-import { setAdminAuthCookies } from '@lib/adminAuth';
-import { apiFetch } from '@lib/fetcher';
-import { mockLogin } from '@lib/mock/admin';
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const { email, password } = body as { email?: string; password?: string };
-
-  if (!email || !password) {
-    return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-  }
-
-  const hasBackend = !!(process.env.ADMINAPIBASE_URL || process.env.ADMIN_API_BASE_URL || process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL);
-
   try {
-    const data: any = hasBackend
-      ? await apiFetch('/admin/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-        })
-      : mockLogin(email, password);
+    const body = await req.json();
+    const { email, password } = body;
 
-    const accessToken: string = data.accessToken || data.access_token || data.token;
-    const refreshToken: string = data.refreshToken || data.refresh_token || data.refresh;
+    // 1. Check against Environment Variables (Simple & Secure)
+    // You can set ADMIN_EMAIL and ADMIN_PASSWORD in your .env file
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
 
-    if (!accessToken || !refreshToken) {
-      // Backend contract mismatch
-      return NextResponse.json(
-        { error: 'Login response missing access/refresh tokens' },
-        { status: 502 },
-      );
+    if (email === adminEmail && password === adminPass) {
+      // Login Success
+      return NextResponse.json({ success: true, message: "Admin Login Successful" });
     }
 
-    const admin = data.admin || data.user || data.profile || null;
+    return NextResponse.json({ error: "Invalid admin credentials" }, { status: 401 });
 
-    const res = NextResponse.json({ admin });
-    setAdminAuthCookies(res, accessToken, refreshToken);
-    return res;
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Login failed' }, { status: 401 });
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

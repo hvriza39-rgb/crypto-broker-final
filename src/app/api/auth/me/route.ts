@@ -1,24 +1,35 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { getDb } from '@lib/db';
-import { ObjectId } from 'mongodb';
+// 👇 FIX: Using relative path to find the prisma file
+import { prisma } from '../../../../lib/prisma'; 
 
-const USER_COOKIE = 'user_session';
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { email } = body;
 
-export async function GET() {
-  const userId = cookies().get(USER_COOKIE)?.value;
-  if (!userId) return NextResponse.json({ user: null });
+    if (!email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
-  const db = await getDb();
-  const user: any = await db.collection('users').findOne({ _id: new ObjectId(userId) });
-  if (!user) return NextResponse.json({ user: null });
+    // 👇 Using 'prisma' correctly here
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        portfolioBalance: true,
+        country: true,
+      }
+    });
 
-  return NextResponse.json({
-    user: {
-      id: String(user._id),
-      fullName: user.fullName,
-      email: user.email,
-      balance: user.balance ?? 0,
-    },
-  });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ user });
+
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

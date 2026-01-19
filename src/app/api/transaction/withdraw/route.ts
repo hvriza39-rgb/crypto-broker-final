@@ -1,65 +1,41 @@
 import { NextResponse } from 'next/server';
-// Ensure this path is correct for your project structure
-import { getDb } from '../../../../lib/db'; 
-import { ObjectId } from 'mongodb'; 
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+import { prisma } from '../../../../lib/prisma'; // 👈 Fixed import
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.split(' ')[1];
-    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const body = await req.json();
+    const { userId, amount, address, asset } = body;
 
-    const { amount, asset, network, address } = await req.json();
-    const numAmount = Number(amount);
-    const userId = new ObjectId(decoded.id);
-
-    console.log(`Processing Withdrawal: User ${userId}, Amount: ${numAmount}`);
-
-    const db = await getDb();
-
-    // 1. Check Balance
-    const user = await db.collection('users').findOne({ _id: userId });
-    const currentBalance = user?.balance || 0;
-
-    if (currentBalance < numAmount) {
-      return NextResponse.json({ error: 'Insufficient funds' }, { status: 400 });
+    // 1. Check if user has enough balance
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (!user || (user.portfolioBalance || 0) < amount) {
+      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
     }
 
-    // 2. Perform the Deduction
-    const updateResult = await db.collection('users').updateOne(
-      { _id: userId },
-      { $inc: { balance: -numAmount } }
-    );
-
-    console.log('Update Result:', updateResult);
-
-    if (updateResult.modifiedCount === 0) {
-      return NextResponse.json({ error: 'Balance update failed. Please try again.' }, { status: 500 });
-    }
-
-    // 3. Save Transaction
-    await db.collection('transactions').insertOne({
-      userId: userId,
-      type: 'withdrawal',
-      amount: numAmount,
-      asset,
-      network,
-      address,
-      status: 'Pending',
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date()
+    // 2. Create Withdrawal Request
+    const transaction = await prisma.transaction.create({
+      data: {
+        userId,
+        type: 'Withdrawal',
+        amount: parseFloat(amount),
+        asset: asset || 'USD',
+        status: 'Pending' // Needs admin approval
+      }
     });
 
-    return NextResponse.json({ success: true, newBalance: currentBalance - numAmount });
+    // 3. Deduct balance immediately (optional, depends on your logic)
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        portfolioBalance: { decrement: parseFloat(amount) }
+      }
+    });
+
+    return NextResponse.json({ success: true, transaction });
 
   } catch (error) {
-    console.error('Withdraw API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error("Withdraw Error:", error);
+    return NextResponse.json({ error: "Withdrawal failed" }, { status: 500 });
   }
 }

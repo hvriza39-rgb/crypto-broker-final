@@ -1,62 +1,86 @@
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
-import { getAdminAccessToken } from '@lib/cookies';
-import { getDb } from '@lib/db';
+import { prisma } from '../../../../../lib/prisma';
 
-function serialize(u: any) {
-  return {
-    id: String(u._id),
-    fullName: u.fullName,
-    email: u.email,
-    phone: u.phone || '',
-    country: u.country || '',
-    balance: Number(u.balance ?? 0),
-    kycStatus: u.kycStatus || 'pending',
-    accountStatus: u.accountStatus || 'active',
-    createdAt: u.createdAt || new Date().toISOString(),
-  };
-}
-
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const token = getAdminAccessToken();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+// GET: Fetch a single user's details
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const db = await getDb();
-    const users = db.collection('users');
-    const user = await users.findOne({ _id: new ObjectId(params.id) });
-    if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ user: serialize(user) });
-  } catch (e: any) {
-    console.error('Failed to load user:', e);
-    return NextResponse.json({ error: e?.message || 'Failed to load user' }, { status: 500 });
+    const { id } = params;
+    
+    const user = await prisma.user.findUnique({
+      where: { id },
+      // Select only what we need (security best practice)
+      select: {
+        id: true,
+        name: true, // If your schema uses 'fullName', change this to fullName
+        email: true,
+        phone: true,
+        country: true,
+        portfolioBalance: true,
+        createdAt: true,
+        // If you have status fields in your schema, add them here:
+        // accountStatus: true,
+        // kycStatus: true,
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Map Prisma fields to the frontend expected format if needed
+    const formattedUser = {
+      ...user,
+      fullName: user.name, // Mapping 'name' to 'fullName' for the frontend
+      balance: user.portfolioBalance,
+      accountStatus: 'active', // Defaulting if not in schema yet
+      kycStatus: 'verified'    // Defaulting if not in schema yet
+    };
+
+    return NextResponse.json({ user: formattedUser });
+
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const token = getAdminAccessToken();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+// PATCH: Update user details
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const patch = await req.json();
-    const allowed = ['fullName', 'email', 'phone', 'country', 'accountStatus', 'kycStatus', 'balance'];
-    const update: any = {};
-    for (const k of allowed) {
-      if (patch[k] !== undefined) update[k] = patch[k];
-    }
+    const { id } = params;
+    const body = await req.json();
+    
+    // Extract fields to update
+    const { fullName, email, phone, country } = body;
 
-    const db = await getDb();
-    const users = db.collection('users');
-    const result = await users.findOneAndUpdate(
-      { _id: new ObjectId(params.id) },
-      { $set: update },
-      { returnDocument: 'after' },
-    );
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name: fullName, // Update 'name' in DB using 'fullName' from form
+        email,
+        phone,
+        country,
+      }
+    });
 
-    if (!result.value) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ user: serialize(result.value) });
-  } catch (e: any) {
-    console.error('Failed to update user:', e);
-    return NextResponse.json({ error: e?.message || 'Update failed' }, { status: 400 });
+    // Format response back to frontend
+    const formattedUser = {
+      ...updatedUser,
+      fullName: updatedUser.name,
+      balance: updatedUser.portfolioBalance,
+      accountStatus: 'active',
+      kycStatus: 'verified'
+    };
+
+    return NextResponse.json({ user: formattedUser });
+
+  } catch (error) {
+    console.error("Update User Error:", error);
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }

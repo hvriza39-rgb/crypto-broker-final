@@ -1,17 +1,19 @@
-import { ReactNode } from 'react';
+import React from 'react';
 
-export function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
+export default function Table({ headers, children }: { headers: string[], children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-sm">
-        <thead>
-          <tr className="text-left text-muted">
-            {headers.map(h => (
-              <th key={h} className="px-4 py-2 border-b border-border">{h}</th>
+    <div className="w-full overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full text-left text-sm text-gray-400">
+        <thead className="bg-white/5 uppercase text-gray-300">
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} className="px-4 py-3 font-medium">{h}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">{children}</tbody>
+        <tbody className="divide-y divide-white/5">
+          {children}
+        </tbody>
       </table>
     </div>
   );

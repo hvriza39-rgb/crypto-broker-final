@@ -1,65 +1,50 @@
 import { NextResponse } from 'next/server';
-import { getAdminAccessToken } from '@lib/cookies';
-import { getDb } from '@lib/db';
-
-const COLLECTION = 'brokerSettings';
+import { prisma } from '../../../../lib/prisma'; // 👈 Fixed import
 
 export async function GET() {
-  const token = getAdminAccessToken();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   try {
-    const db = await getDb();
-    const col = db.collection(COLLECTION);
+    // Get the first settings row, or create one if it doesn't exist
+    let settings = await prisma.settings.findFirst();
 
-    let doc: any = await col.findOne({});
-    if (!doc) {
-      await col.insertOne({ depositWallet: '', updatedAt: new Date().toISOString(), updatedBy: 'system' });
-      doc = await col.findOne({});
+    if (!settings) {
+      settings = await prisma.settings.create({
+        data: {
+          btcAddress: '',
+          evmAddress: ''
+        }
+      });
     }
 
-    return NextResponse.json({
-      settings: {
-        depositWallet: doc?.depositWallet || '',
-        updatedAt: doc?.updatedAt || new Date().toISOString(),
-        updatedBy: doc?.updatedBy || '',
-      },
-    });
-  } catch (e: any) {
-    console.error('Failed to fetch settings:', e);
-    return NextResponse.json({ error: e?.message || 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json(settings);
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to load settings" }, { status: 500 });
   }
 }
 
-export async function PATCH(req: Request) {
-  const token = getAdminAccessToken();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const depositWallet = body?.depositWallet;
+    const { btcAddress, evmAddress } = body;
 
-    if (!depositWallet || typeof depositWallet !== 'string') {
-      return NextResponse.json({ error: 'Valid deposit wallet address is required' }, { status: 400 });
+    // Update the first settings found
+    // (In a real app, you might want a more specific ID, but this works for single-config)
+    const firstSetting = await prisma.settings.findFirst();
+    
+    if (firstSetting) {
+      const updated = await prisma.settings.update({
+        where: { id: firstSetting.id },
+        data: { btcAddress, evmAddress }
+      });
+      return NextResponse.json(updated);
+    } else {
+      // Create if missing
+      const newSettings = await prisma.settings.create({
+        data: { btcAddress, evmAddress }
+      });
+      return NextResponse.json(newSettings);
     }
 
-    const db = await getDb();
-    const col = db.collection(COLLECTION);
-
-    const updatedAt = new Date().toISOString();
-    await col.updateOne({}, { $set: { depositWallet, updatedAt, updatedBy: 'admin' } }, { upsert: true });
-
-    const doc: any = await col.findOne({});
-
-    return NextResponse.json({
-      settings: {
-        depositWallet: doc?.depositWallet || depositWallet,
-        updatedAt: doc?.updatedAt || updatedAt,
-        updatedBy: doc?.updatedBy || 'admin',
-      },
-    });
-  } catch (e: any) {
-    console.error('Failed to update settings:', e);
-    return NextResponse.json({ error: e?.message || 'Settings update failed' }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }
 }

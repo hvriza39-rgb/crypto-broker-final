@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // FIXED: Uses Prisma instead of db.ts
+import { prisma } from '../../..//lib/prisma'; // FIXED: Uses Prisma instead of db.ts
 
 // Force this route to be dynamic so it never caches old data
 export const dynamic = 'force-dynamic';

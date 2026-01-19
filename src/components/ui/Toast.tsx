@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { Toast as ToastType } from '@hooks/useToast';
+import { Toast as ToastType } from '../../hooks/useToast';
 
 export default function Toast({ toasts }: { toasts: ToastType[] }) {
   const color = (t: ToastType['type']) =>

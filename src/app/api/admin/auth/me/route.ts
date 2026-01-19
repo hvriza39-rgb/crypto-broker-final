@@ -1,25 +1,35 @@
 import { NextResponse } from 'next/server';
-import { getAdminAccessToken } from '@lib/cookies';
-import { apiFetch } from '@lib/fetcher';
-import { mockGetMe } from '@lib/mock/admin';
+// 👇 FIX: Import 'prisma' instead of 'getDb'
+import { prisma } from '../../../../../lib/prisma';
 
-export async function GET() {
-  const token = getAdminAccessToken();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const hasBackend = !!(process.env.ADMINAPIBASE_URL || process.env.ADMIN_API_BASE_URL || process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL);
-  if (!hasBackend) {
-    const admin = mockGetMe();
-    return NextResponse.json({ admin });
-  }
-
+export async function POST(req: Request) {
   try {
-    const data: any = await apiFetch('/admin/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
+    const body = await req.json();
+    const { email } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // 👇 Use 'prisma' here
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        portfolioBalance: true,
+        country: true,
+      }
     });
-    return NextResponse.json({ admin: data.admin ?? data });
-  } catch (e: any) {
-    console.error('Failed to fetch admin profile:', e);
-    return NextResponse.json({ error: e.message || 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ user });
+
+  } catch (error) {
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

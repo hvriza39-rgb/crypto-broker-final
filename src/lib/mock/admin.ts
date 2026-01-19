@@ -1,5 +1,5 @@
-import { User } from '@appTypes/user';
-import { AdminProfile, BrokerSettings } from '@appTypes/admin';
+import { User } from '../../types/user';
+import { AdminProfile, BrokerSettings } from '../../types/admin';
 
 let users: User[] = [
   {

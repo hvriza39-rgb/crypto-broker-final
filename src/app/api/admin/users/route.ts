@@ -1,74 +1,38 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '../../../../lib/db';
-import { ObjectId } from 'mongodb';
+import { prisma } from '../../../../lib/prisma';
 
-// GET: Fetch all users
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const db = await getDb();
-    const users = await db.collection('users').find({}).sort({ createdAt: -1 }).toArray();
+    // Fetch all users
+    const users = await prisma.user.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        portfolioBalance: true,
+        createdAt: true,
+        country: true,
+      }
+    });
 
-    const safeUsers = users.map(user => ({
-      _id: user._id,
-      name: user.name,
+    // Format for the Admin Dashboard Table
+    const formattedUsers = users.map(user => ({
+      id: user.id,
+      fullName: user.name,
       email: user.email,
-      balance: user.balance || 0,
-      country: user.country || '',
-      phone: user.phone || '',
-      verified: user.verified || false,
-      createdAt: user.createdAt
+      balance: user.portfolioBalance,
+      status: 'Active', // Default
+      joinedAt: user.createdAt,
+      country: user.country || 'N/A'
     }));
 
-    return NextResponse.json(safeUsers);
+    return NextResponse.json({ users: formattedUsers });
+
   } catch (error) {
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
-  }
-}
-
-// PUT: Update User Details (FIXED)
-export async function PUT(req: Request) {
-  try {
-    const body = await req.json();
-    
-    // FIX: Extract '_id' separately so it is NOT included in 'updates'
-    // MongoDB throws an error if you try to update the immutable '_id' field
-    const { userId, _id, ...updates } = body; 
-
-    if (!userId) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
-
-    const db = await getDb();
-
-    // Sanitize update data
-    const finalUpdates: any = { ...updates };
-    if (finalUpdates.balance !== undefined) {
-      finalUpdates.balance = Number(finalUpdates.balance);
-    }
-
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: finalUpdates }
-    );
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Update Error:", error);
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-  }
-}
-
-// DELETE: Remove a User
-export async function DELETE(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
-    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
-
-    const db = await getDb();
-    await db.collection('users').deleteOne({ _id: new ObjectId(id) });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
+    console.error("Fetch Users Error:", error);
+    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 }
