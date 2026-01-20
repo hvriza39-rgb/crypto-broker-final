@@ -17,6 +17,9 @@ model User {
   phone            String?
   country          String?
   
+  // Authorization
+  role             String        @default("user") // "user" or "admin"
+  
   // Financial Data
   portfolioBalance Float         @default(0.0)
   availableBalance Float         @default(0.0)
@@ -25,20 +28,23 @@ model User {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   
+  // Relations
   transactions     Transaction[]
 }
 
 model Transaction {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String   // e.g., 'Deposit', 'Withdrawal'
-  asset     String   // e.g., 'BTC', 'USD'
-  amount    Float
-  status    String   // e.g., 'Pending', 'Completed'
-  createdAt DateTime @default(now())
-  
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // "BUY", "SELL", "DEPOSIT", "WITHDRAWAL"
+  asset       String?  // Optional for deposits/withdrawals, required for trades
+  amount      Float
+  status      String   // "PENDING", "COMPLETED", "FAILED"
+  description String?  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
+
 model Settings {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   btcAddress  String?
