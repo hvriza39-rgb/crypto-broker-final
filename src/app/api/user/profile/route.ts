@@ -1,81 +1,27 @@
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/prisma';
+import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../../../../lib/prisma'; // Adjust this path to your prisma helper
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// Helper to verify token
-const verifyToken = (req: Request) => {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
+export async function GET() {
   try {
-    return jwt.verify(token, JWT_SECRET) as any;
-  } catch (error) {
-    return null;
-  }
-};
+    const token = cookies().get('token')?.value;
 
-// GET: Fetch User Details
-export async function GET(req: Request) {
-  try {
-    const decoded = verifyToken(req);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const userId = decoded.userId || decoded.id;
-
+    // Decode the token to get the user ID
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    
+    // Fetch real data from MongoDB
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: decoded.id },
+      select: { email: true, role: true, name: true } // Don't send the password!
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ 
-      name: user.name || '', 
-      email: user.email || '',
-      phone: user.phone || '',
-      country: user.country || ''
-    });
-
+    return NextResponse.json(user);
   } catch (error) {
-    console.error("Profile API Error:", error);
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
-  }
-}
-
-// PUT: Update User Details
-export async function PUT(req: Request) {
-  try {
-    const decoded = verifyToken(req);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = decoded.userId || decoded.id;
-    const body = await req.json();
-    const { name, phone, country } = body;
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name,
-        phone,
-        country
-      }
-    });
-
-    return NextResponse.json({ success: true, message: 'Profile updated' });
-
-  } catch (error) {
-    console.error("Profile Update Error:", error);
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

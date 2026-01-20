@@ -34,10 +34,15 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => setMobileOpen(false), [pathname]);
-
-  const handleLogout = () => {
+const handleLogout = () => {
+    // 1. Kill the cookie (The most important part for Middleware)
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+    
+    // 2. Clear localStorage for extra safety
     localStorage.removeItem('token');
-    router.push('/login');
+    
+    // 3. Force a hard refresh to the login page to clear any cached states
+    window.location.href = '/login';
   };
 
   const noScrollbarClass = "scrollbar-hide overflow-y-auto";
