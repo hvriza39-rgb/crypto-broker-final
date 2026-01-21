@@ -1,55 +1,47 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. GLOBAL API PASS-THROUGH (Crucial Fix)
-  // We let ALL API requests pass through. The API routes will handle 
-  // their own verification (jwt.verify). This prevents CORS and Logout issues.
-  if (pathname.startsWith('/api')) {
+  // 1) Let ALL API routes pass through
+  if (pathname.startsWith("/api")) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get('token')?.value;
+  const token = req.cookies.get("token")?.value;
 
-  // 2. ---- Admin Page Guard ----
-  if (pathname.startsWith('/admin')) {
-    // Allow login page
-    if (pathname === '/admin/login') {
-      return NextResponse.next();
-    }
-    // Block protected admin pages
+  // 2) ---- Admin Page Guard ----
+  if (pathname.startsWith("/admin")) {
+    // Allow admin login page
+    if (pathname === "/admin/login") return NextResponse.next();
+
+    // Block protected admin pages if no token
     if (!token) {
       const url = req.nextUrl.clone();
-      url.pathname = '/admin/login';
+      url.pathname = "/admin/login";
       return NextResponse.redirect(url);
     }
   }
 
-  // 3. ---- User Page Guard ----
-  // Protect dashboard and settings pages
-  const isProtected = [
-    '/dashboard', '/deposit', '/withdrawal', '/trade', '/settings'
-  ].some(path => pathname.startsWith(path));
+  // 3) ---- User Page Guard ----
+  const isProtected = ["/dashboard", "/deposit", "/withdrawal", "/trade", "/settings"].some(
+    (p) => pathname.startsWith(p)
+  );
 
-  if (isProtected) {
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-  }
-
-  // 4. ---- Prevent Logged-in Users from seeing Login Page ----
-  if ((pathname === '/login' || pathname === '/admin/login') && token) {
+  if (isProtected && !token) {
     const url = req.nextUrl.clone();
-    // Redirect based on where they are trying to go
-    if (pathname.startsWith('/admin')) {
-      url.pathname = '/admin/users';
-    } else {
-      url.pathname = '/dashboard';
-    }
+    url.pathname = "/auth/login"; // ✅ match your real login route
+    return NextResponse.redirect(url);
+  }
+
+  // 4) ---- Prevent Logged-in Users from seeing Login Page ----
+  const isLoginPage =
+    pathname === "/auth/login" || pathname === "/login" || pathname === "/admin/login";
+
+  if (isLoginPage && token) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.startsWith("/admin") ? "/admin/users" : "/dashboard";
     return NextResponse.redirect(url);
   }
 
@@ -59,6 +51,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Apply to everything EXCEPT static files and images
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
