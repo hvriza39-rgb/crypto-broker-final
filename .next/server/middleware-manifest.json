@@ -10,50 +10,18 @@
       "page": "/",
       "matchers": [
         {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/dashboard(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/dashboard/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/deposit(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/deposit/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/withdrawal(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/withdrawal/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/trade(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/trade/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/settings(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/settings/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/admin/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/admin(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(.json)?[\\/#\\?]?$",
-          "originalSource": "/api/admin/:path*"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/login(.json)?[\\/#\\?]?$",
-          "originalSource": "/login"
-        },
-        {
-          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin\\/login(.json)?[\\/#\\?]?$",
-          "originalSource": "/admin/login"
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico).*))(.json)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico).*)"
         }
       ],
       "wasm": [],
       "assets": [],
       "env": {
-        "__NEXT_BUILD_ID": "tGRd7jmiqz9GKvwYhgkPH",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "30ZTouhspJ1wqkX8ZcLDvN7bUqxrlDT9sohurBrvKZU=",
-        "__NEXT_PREVIEW_MODE_ID": "542b7f6fd75424c03c11d332784f38ac",
-        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "16ee00a4a1065369610ce7586ded6e24119466638d6df24980d842d9c4b9ed62",
-        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "1f2bc3fe71d5280d9acd0e88e0e28eccd973a309bc55f032b6b25da38e008e9b"
+        "__NEXT_BUILD_ID": "pJ82zNB-IWp5E9Bwpqzx9",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "1NcfAvvtHRuGDeHqyLSGUo/FxYBehkWdVSz66Wz9SqE=",
+        "__NEXT_PREVIEW_MODE_ID": "db0652a1e23a9e29c1a93d4950d29ec0",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "4db7cad334571a1e085ba97dc7610ed90a601a6c9d2e23d73f5100fa7edea430",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "507d4cb75a28911e3278992250aab964896ec94baf1f305e44df3678012b996e"
       }
     }
   },

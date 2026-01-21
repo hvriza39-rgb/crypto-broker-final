@@ -1,4 +1,4 @@
-// File: C:\Users\user\Documents\web-upload\crypto-broker-dashboard-with-admin-connected-backend\src\app\api\auth\logout\route.ts
+// File: C:\Users\user\Documents\web-upload\crypto-broker-dashboard-with-admin-connected-backend\src\app\api\auth\logout\route.js
 import * as entry from '../../../../../../src/app/api/auth/logout/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -31,11 +31,11 @@ export function middleware(req: NextRequest) {
 
   if (isProtected && !token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/auth/login"; // ✅ match your real login route
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
-  // 4) ---- Prevent Logged-in Users from seeing Login Page ----
+  // 4) ---- Prevent logged-in users from seeing login pages ----
   const isLoginPage =
     pathname === "/auth/login" || pathname === "/login" || pathname === "/admin/login";
 
@@ -49,8 +49,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Apply to everything EXCEPT static files and images
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
