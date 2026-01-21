@@ -13,8 +13,9 @@ import {
   Settings, 
   ShieldCheck,
   Menu,
-  X
-} from 'lucide-react'; // Ensure you have lucide-react installed
+  X,
+  LogOut // <--- Added Icon
+} from 'lucide-react'; 
 
 const items = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,32 +29,45 @@ const items = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  // State for Mobile (Open/Closed)
   const [mobileOpen, setMobileOpen] = useState(false);
-  // State for Desktop (Expanded/Collapsed)
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
 
-  // Close mobile menu when route changes
   useEffect(() => setMobileOpen(false), [pathname]);
+
+  // --- NEW LOGOUT FUNCTION ---
+  const handleLogout = async () => {
+    try {
+      // 1. Ask server to delete the secure cookie
+      await fetch('/api/auth/logout', { method: 'POST' });
+      
+      // 2. Clear local storage
+      localStorage.removeItem('token');
+      
+      // 3. Force redirect to login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed', error);
+      window.location.href = '/login';
+    }
+  };
 
   return (
     <>
-      {/* --- Toggle Button (Visible on both Mobile & Desktop) --- */}
+      {/* --- Toggle Button --- */}
       <button
         onClick={() => {
           if (window.innerWidth >= 768) {
-            setDesktopCollapsed(!desktopCollapsed); // Toggle Collapse on Desktop
+            setDesktopCollapsed(!desktopCollapsed);
           } else {
-            setMobileOpen(!mobileOpen); // Toggle Slide on Mobile
+            setMobileOpen(!mobileOpen);
           }
         }}
         className="fixed top-4 left-4 z-50 p-2 rounded-md bg-[#0b1220] border border-white/10 text-white hover:bg-white/5 transition-colors"
-        aria-label="Toggle navigation"
       >
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* --- Mobile Overlay (Dimming Background) --- */}
+      {/* --- Mobile Overlay --- */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
@@ -64,16 +78,15 @@ export default function Sidebar() {
       {/* --- The Sidebar --- */}
       <aside
         className={clsx(
-          'fixed inset-y-0 left-0 z-40 bg-[#0b1220] border-r border-white/10 transition-all duration-300 ease-in-out',
-          // Mobile: Slide in/out
+          // Added 'flex flex-col' here to push logout to bottom
+          'fixed inset-y-0 left-0 z-40 bg-[#0b1220] border-r border-white/10 transition-all duration-300 ease-in-out flex flex-col',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          // Desktop: Always visible, but width changes
           'md:translate-x-0',
           desktopCollapsed ? 'md:w-20' : 'md:w-64'
         )}
       >
         {/* Logo Section */}
-        <div className={clsx("flex items-center h-16 border-b border-white/10", desktopCollapsed ? "justify-center" : "px-6")}>
+        <div className={clsx("flex items-center h-16 border-b border-white/10 flex-shrink-0", desktopCollapsed ? "justify-center" : "px-6")}>
           <div className="text-xl font-bold text-white tracking-wide">
             {desktopCollapsed ? (
               <span className="text-blue-500">B</span>
@@ -84,7 +97,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const Icon = item.icon;
@@ -102,10 +115,7 @@ export default function Sidebar() {
                 )}
                 title={desktopCollapsed ? item.label : undefined}
               >
-                {/* Icon */}
                 <Icon size={20} className={clsx(isActive ? 'text-white' : 'group-hover:text-white')} />
-                
-                {/* Text Label (Hidden if Collapsed) */}
                 {!desktopCollapsed && (
                   <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
                 )}
@@ -113,6 +123,22 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* --- LOGOUT SECTION (Added at bottom) --- */}
+        <div className="p-4 border-t border-white/10 mt-auto bg-[#0b1220] flex-shrink-0">
+          <button 
+            onClick={handleLogout}
+            className={clsx(
+              'flex items-center gap-3 w-full px-3 py-3 rounded-xl transition-all group text-red-400 hover:text-red-300 hover:bg-red-500/10',
+              desktopCollapsed && 'justify-center px-0'
+            )}
+            title="Log Out"
+          >
+            <LogOut size={20} />
+            {!desktopCollapsed && <span className="text-sm font-medium">Log Out</span>}
+          </button>
+        </div>
+
       </aside>
     </>
   );

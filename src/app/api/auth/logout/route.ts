@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-
-const USER_COOKIE = 'user_session';
+import { cookies } from 'next/headers';
 
 export async function POST() {
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(USER_COOKIE, '', { path: '/', maxAge: 0 });
-  return res;
+  // This helper explicitly deletes the cookie with all correct flags
+  cookies().delete('token');
+
+  return NextResponse.json({ success: true });
 }
