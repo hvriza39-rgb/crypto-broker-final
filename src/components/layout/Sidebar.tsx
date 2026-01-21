@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Menu,
   X,
-  LogOut // <--- Added Icon
+  LogOut 
 } from 'lucide-react'; 
 
 const items = [
@@ -34,32 +34,29 @@ export default function Sidebar() {
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
- const handleLogout = async () => {
-  try {
-    // Add credentials and proper headers
-    await fetch('/api/auth/logout', { 
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    // Clear local storage
-    localStorage.removeItem('token');
-    
-    // Force redirect to login
-    window.location.href = '/login';
-  } catch (error) {
-    console.error('Logout failed', error);
-    // Redirect anyway to be safe
-    window.location.href = '/login';
-  }
-};
+  // --- FIXED LOGOUT FUNCTION ---
+  const handleLogout = async () => {
+    try {
+      // 1. Call API to kill cookie
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        cache: 'no-store' 
+      });
+      
+      // 2. Clear local storage (just in case)
+      localStorage.removeItem('token');
+      
+      // 3. Force Hard Redirect (Prevents back button)
+      window.location.replace('/login');
+    } catch (error) {
+      console.error('Logout failed', error);
+      window.location.replace('/login');
+    }
+  };
 
   return (
     <>
-      {/* --- Toggle Button --- */}
+      {/* Toggle Button */}
       <button
         onClick={() => {
           if (window.innerWidth >= 768) {
@@ -73,7 +70,7 @@ export default function Sidebar() {
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* --- Mobile Overlay --- */}
+      {/* Mobile Overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
@@ -81,17 +78,15 @@ export default function Sidebar() {
         />
       )}
 
-      {/* --- The Sidebar --- */}
+      {/* Sidebar */}
       <aside
         className={clsx(
-          // Added 'flex flex-col' here to push logout to bottom
           'fixed inset-y-0 left-0 z-40 bg-[#0b1220] border-r border-white/10 transition-all duration-300 ease-in-out flex flex-col',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           'md:translate-x-0',
           desktopCollapsed ? 'md:w-20' : 'md:w-64'
         )}
       >
-        {/* Logo Section */}
         <div className={clsx("flex items-center h-16 border-b border-white/10 flex-shrink-0", desktopCollapsed ? "justify-center" : "px-6")}>
           <div className="text-xl font-bold text-white tracking-wide">
             {desktopCollapsed ? (
@@ -102,7 +97,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Navigation Links */}
         <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -130,7 +124,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* --- LOGOUT SECTION (Added at bottom) --- */}
+        {/* Logout Button */}
         <div className="p-4 border-t border-white/10 mt-auto bg-[#0b1220] flex-shrink-0">
           <button 
             onClick={handleLogout}
@@ -144,7 +138,6 @@ export default function Sidebar() {
             {!desktopCollapsed && <span className="text-sm font-medium">Log Out</span>}
           </button>
         </div>
-
       </aside>
     </>
   );

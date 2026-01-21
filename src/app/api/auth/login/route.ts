@@ -5,60 +5,35 @@ import jwt from 'jsonwebtoken';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
-    // 1. Validate Input
-    if (!email || !password) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || !(await bcrypt.compare(password, user.hashedPassword))) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 2. Find User
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (!user || !user.hashedPassword) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 });
-    }
-
-    // 3. Check Password
-    const isMatch = await bcrypt.compare(password, user.hashedPassword);
-
-    if (!isMatch) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-    // 4. Create Token
-    const secret = process.env.JWT_SECRET || "default_secret_key";
+    // Create the token
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      secret,
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET!,
       { expiresIn: '1d' }
     );
 
-    // 5. Send Response
-    const response = NextResponse.json({ 
-      message: "Login successful",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      }
-    });
+    const response = NextResponse.json({ success: true, role: user.role });
 
-    // UPDATED: Added secure and sameSite
+    // SET COOKIE: Strictly defined settings
     response.cookies.set('token', token, {
       httpOnly: true,
-      path: '/',
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/',      // <--- MUST BE '/'
+      maxAge: 86400,  // 1 day
     });
 
     return response;
-
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
 }

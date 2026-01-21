@@ -1,39 +1,34 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const COOKIE_NAME = 'token';
-
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 👇 NEW: Skip middleware entirely for logout endpoint
-  if (pathname === '/api/auth/logout') {
+  // 1. GLOBAL API PASS-THROUGH (Crucial Fix)
+  // We let ALL API requests pass through. The API routes will handle 
+  // their own verification (jwt.verify). This prevents CORS and Logout issues.
+  if (pathname.startsWith('/api')) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const token = req.cookies.get('token')?.value;
 
-  // 1. ---- Admin Guard (Pages & API) ----
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    if (pathname === '/admin/login' || pathname === '/api/admin/auth/login') {
+  // 2. ---- Admin Page Guard ----
+  if (pathname.startsWith('/admin')) {
+    // Allow login page
+    if (pathname === '/admin/login') {
       return NextResponse.next();
     }
-
+    // Block protected admin pages
     if (!token) {
-      if (pathname.startsWith('/api/')) {
-        return new NextResponse(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);
     }
   }
 
-  // 2. ---- User Dashboard Guard ----
+  // 3. ---- User Page Guard ----
+  // Protect dashboard and settings pages
   const isProtected = [
     '/dashboard', '/deposit', '/withdrawal', '/trade', '/settings'
   ].some(path => pathname.startsWith(path));
@@ -46,15 +41,16 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 3. ---- Prevent Logged-in Users from seeing Login Page ----
+  // 4. ---- Prevent Logged-in Users from seeing Login Page ----
   if ((pathname === '/login' || pathname === '/admin/login') && token) {
-     const url = req.nextUrl.clone();
-     if (pathname.startsWith('/admin')) {
-        url.pathname = '/admin/users';
-     } else {
-        url.pathname = '/dashboard';
-     }
-     return NextResponse.redirect(url);
+    const url = req.nextUrl.clone();
+    // Redirect based on where they are trying to go
+    if (pathname.startsWith('/admin')) {
+      url.pathname = '/admin/users';
+    } else {
+      url.pathname = '/dashboard';
+    }
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
@@ -62,15 +58,7 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/deposit/:path*',
-    '/withdrawal/:path*',
-    '/trade/:path*',
-    '/settings/:path*',
-    '/admin/:path*',
-    '/api/admin/:path*',
-    '/api/auth/logout', // 👈 Added this
-    '/login',
-    '/admin/login'
+    // Apply to everything EXCEPT static files and images
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
