@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/prisma'; // This will work after Step 1 is done
+import { prisma } from '../../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -47,9 +47,12 @@ export async function POST(req: Request) {
       }
     });
 
+    // UPDATED: Added secure and sameSite
     response.cookies.set('token', token, {
       httpOnly: true,
       path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
     });
 
     return response;
