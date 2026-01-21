@@ -35,6 +35,21 @@ export default function Sidebar() {
   useEffect(() => setMobileOpen(false), [pathname]);
 
   const handleLogout = async () => {
+    const handleLogout = async () => {
+  console.log("LOGOUT CLICKED");
+  try {
+    await fetch(`${window.location.origin}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    });
+    window.location.replace("/auth/login");
+  } catch (e) {
+    console.error("Logout failed", e);
+    window.location.replace("/auth/login");
+  }
+};
+
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
