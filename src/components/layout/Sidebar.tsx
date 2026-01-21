@@ -34,22 +34,28 @@ export default function Sidebar() {
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  // --- NEW LOGOUT FUNCTION ---
-  const handleLogout = async () => {
-    try {
-      // 1. Ask server to delete the secure cookie
-      await fetch('/api/auth/logout', { method: 'POST' });
-      
-      // 2. Clear local storage
-      localStorage.removeItem('token');
-      
-      // 3. Force redirect to login
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout failed', error);
-      window.location.href = '/login';
-    }
-  };
+ const handleLogout = async () => {
+  try {
+    // Add credentials and proper headers
+    await fetch('/api/auth/logout', { 
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    // Clear local storage
+    localStorage.removeItem('token');
+    
+    // Force redirect to login
+    window.location.href = '/login';
+  } catch (error) {
+    console.error('Logout failed', error);
+    // Redirect anyway to be safe
+    window.location.href = '/login';
+  }
+};
 
   return (
     <>
