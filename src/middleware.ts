@@ -1,25 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 👇 FIX 1: Change this to match the cookie name we set in the Login Page
 const COOKIE_NAME = 'token';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Retrieve the token (ticket) from the user's browser
+  // 👇 NEW: Skip middleware entirely for logout endpoint
+  if (pathname === '/api/auth/logout') {
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
   // 1. ---- Admin Guard (Pages & API) ----
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    // Allow the login page and login API to be accessed without a token
     if (pathname === '/admin/login' || pathname === '/api/admin/auth/login') {
       return NextResponse.next();
     }
 
-    // Check if the token exists
     if (!token) {
-      // If it's an API call, return a JSON error instead of a redirect
       if (pathname.startsWith('/api/')) {
         return new NextResponse(
           JSON.stringify({ error: 'Unauthorized' }),
@@ -27,7 +27,6 @@ export function middleware(req: NextRequest) {
         );
       }
       
-      // If it's a page, redirect to admin login
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);
@@ -40,7 +39,6 @@ export function middleware(req: NextRequest) {
   ].some(path => pathname.startsWith(path));
 
   if (isProtected) {
-    // If trying to visit dashboard without a token, kick them out
     if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = '/login';
@@ -49,7 +47,6 @@ export function middleware(req: NextRequest) {
   }
 
   // 3. ---- Prevent Logged-in Users from seeing Login Page ----
-  // If they HAVE a token but visit /login, send them to dashboard
   if ((pathname === '/login' || pathname === '/admin/login') && token) {
      const url = req.nextUrl.clone();
      if (pathname.startsWith('/admin')) {
@@ -72,6 +69,7 @@ export const config = {
     '/settings/:path*',
     '/admin/:path*',
     '/api/admin/:path*',
+    '/api/auth/logout', // 👈 Added this
     '/login',
     '/admin/login'
   ],
