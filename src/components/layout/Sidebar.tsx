@@ -37,25 +37,15 @@ export default function Sidebar() {
 
  // Inside your Sidebar component...
 
-  const handleLogout = async () => {
-    try {
-      // 1. Call API to kill cookie
-      await fetch('/api/auth/logout', { 
-        method: 'POST',
-        cache: 'no-store' 
-      });
-      
-      // 2. Clear local storage
-      localStorage.removeItem('token');
-      
-      // 3. Force Hard Redirect to the NEW login page
-      // Using 'replace' prevents the Back button from working
-      window.location.replace('/auth/login');
-      
-    } catch (error) {
-      console.error('Logout failed', error);
-      window.location.replace('/auth/login');
-    }
+ // src/components/Sidebar.tsx
+
+  const handleLogout = () => {
+    // 1. Clear local storage immediately
+    localStorage.removeItem('token');
+
+    // 2. Navigate directly to the API. 
+    // The API will handle the cookie deletion and redirect us to /auth/login
+    window.location.href = '/api/auth/logout';
   };
 
   return (

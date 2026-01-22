@@ -2,40 +2,32 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-function clearToken(res) {
-  const cookieOptions = {
+export async function POST(req) {
+  return logout(req);
+}
+
+export async function GET(req) {
+  return logout(req);
+}
+
+async function logout(req) {
+  const url = new URL("/auth/login", req.url);
+  const res = NextResponse.redirect(url);
+
+  // 1. Standard Cookie Deletion
+  res.cookies.set("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/", // <--- MATCHES LOGIN EXACTLY
-    expires: new Date(0),
+    path: "/", 
     maxAge: 0,
-  };
+  });
 
-  // 1. Overwrite with empty value
-  res.cookies.set("token", "", cookieOptions);
-  
-  // 2. Explicit delete command
+  // 2. Fallback: Try deleting with an empty path (sometimes fixes legacy cookies)
   res.cookies.delete("token");
-}
 
-export async function POST(req) {
-  // Redirect to your NEW login path
-  const url = new URL("/auth/login", req.url);
-  
-  // Create the redirect response
-  const res = NextResponse.redirect(url);
-  
-  // Attach the cookie-killing headers
-  clearToken(res);
-  
-  return res;
-}
+  // 3. Prevent Caching of this response
+  res.headers.set("Cache-Control", "no-store, max-age=0");
 
-// Handle GET requests (in case you link directly to it)
-export async function GET(req) {
-  const url = new URL("/auth/login", req.url);
-  const res = NextResponse.redirect(url);
-  clearToken(res);
   return res;
 }
