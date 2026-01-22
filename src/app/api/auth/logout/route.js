@@ -11,10 +11,13 @@ export async function GET(req) {
 }
 
 async function logout(req) {
-  const url = new URL("/auth/login", req.url);
+  // 1. Add ?logout=true to the URL
+  // This tells the middleware "Allow this user to see the login page, even if they have a cookie"
+  const url = new URL("/auth/login?logout=true", req.url);
+  
   const res = NextResponse.redirect(url);
 
-  // 1. Standard Cookie Deletion
+  // 2. Try to kill the cookie normally
   res.cookies.set("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -22,12 +25,6 @@ async function logout(req) {
     path: "/", 
     maxAge: 0,
   });
-
-  // 2. Fallback: Try deleting with an empty path (sometimes fixes legacy cookies)
-  res.cookies.delete("token");
-
-  // 3. Prevent Caching of this response
-  res.headers.set("Cache-Control", "no-store, max-age=0");
 
   return res;
 }
