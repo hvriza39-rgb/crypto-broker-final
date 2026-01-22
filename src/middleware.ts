@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. IGNORE API ROUTES (Critical)
+  // 1. IGNORE API ROUTES
   if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('favicon.ico')) {
     return NextResponse.next();
   }
@@ -21,7 +21,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 3. USER GUARD
+  // 3. USER GUARD (Protect Dashboard)
   const isProtected = [
     '/dashboard', '/deposit', '/withdrawal', '/trade', '/settings'
   ].some(path => pathname.startsWith(path));
@@ -32,14 +32,16 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 4. LOGIN GUARD (Prevent users from seeing login page)
-  const isLoginPage = pathname === '/auth/login' || pathname === '/login' || pathname === '/admin/login';
-  
+  // 4. [DISABLED] LOGIN GUARD
+  // We commented this out. If a user goes to /auth/login, we LET THEM.
+  // This prevents the infinite "Logout -> Dashboard" loop.
+  /* const isLoginPage = pathname === '/auth/login' || pathname === '/login' || pathname === '/admin/login';
   if (isLoginPage && token) {
     const url = req.nextUrl.clone();
     url.pathname = pathname.startsWith('/admin') ? '/admin/users' : '/dashboard';
     return NextResponse.redirect(url);
   }
+  */
 
   return NextResponse.next();
 }
