@@ -3,33 +3,40 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  return logout(req);
-}
-
-export async function GET(req) {
-  return logout(req);
-}
-
-async function logout(req) {
-  // 1. Redirect to Login WITH the signal (?logout=true)
-  // We use req.url to get the base domain automatically
-  const url = new URL(req.url);
-  url.pathname = "/auth/login";
-  url.searchParams.set("logout", "true"); // <--- This triggers the Middleware Trap
-
+  // Redirect destination
+  const url = new URL("/auth/login", req.url);
   const res = NextResponse.redirect(url);
 
-  // 2. Try to delete the cookie normally as well
+  // 💥 THE SHOTGUN APPROACH 💥
+  // We send 3 different delete commands. One of them WILL work.
+
+  // 1. Delete as HTTPS / Secure (Production Standard)
   res.cookies.set("token", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
-    path: "/", 
+    path: "/",
     maxAge: 0,
   });
 
-  // 3. Prevent caching so the browser doesn't remember the redirect
-  res.headers.set("Cache-Control", "no-store, max-age=0");
+  // 2. Delete as HTTP / Non-Secure (Localhost Fallback)
+  // Sometimes Vercel preview environments act like this
+  res.cookies.set("token.legacy", "", {
+    path: "/",
+    maxAge: 0,
+  });
+
+  // 3. Raw Header Append (The "Belt and Suspenders" fix)
+  // This bypasses Next.js helpers and speaks directly to the browser
+  res.headers.append(
+    "Set-Cookie",
+    "token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure"
+  );
 
   return res;
+}
+
+// Handle GET requests too (in case of direct navigation)
+export async function GET(req) {
+  return POST(req);
 }

@@ -2,25 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
-  const { pathname, searchParams } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
-  // 1. ALLOW API & STATIC FILES
+  // 1. IGNORE API ROUTES (Critical)
   if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('favicon.ico')) {
     return NextResponse.next();
   }
 
-  // 2. THE LOGOUT TRAP (The Fix)
-  // If the URL has ?logout=true, we FORCE the login page to show
-  // and we manually delete the cookie in the response.
-  if (searchParams.get('logout') === 'true') {
-    const response = NextResponse.next();
-    response.cookies.delete('token'); 
-    return response;
-  }
-
   const token = req.cookies.get('token')?.value;
 
-  // 3. ADMIN GUARD
+  // 2. ADMIN GUARD
   if (pathname.startsWith('/admin')) {
     if (pathname === '/admin/login') return NextResponse.next();
     if (!token) {
@@ -30,7 +21,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 4. USER GUARD (Protect Dashboard)
+  // 3. USER GUARD
   const isProtected = [
     '/dashboard', '/deposit', '/withdrawal', '/trade', '/settings'
   ].some(path => pathname.startsWith(path));
@@ -41,8 +32,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 5. LOGIN PAGE GUARD
-  // If user has a token (and NO logout flag), kick them to dashboard
+  // 4. LOGIN GUARD (Prevent users from seeing login page)
   const isLoginPage = pathname === '/auth/login' || pathname === '/login' || pathname === '/admin/login';
   
   if (isLoginPage && token) {

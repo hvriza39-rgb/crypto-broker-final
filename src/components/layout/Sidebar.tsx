@@ -39,12 +39,9 @@ export default function Sidebar() {
 
  // src/components/Sidebar.tsx
 
-  const handleLogout = () => {
-    // 1. Clear local storage immediately
-    localStorage.removeItem('token');
-
-    // 2. Navigate directly to the API. 
-    // The API will handle the cookie deletion and redirect us to /auth/login
+ const handleLogout = () => {
+    localStorage.clear();
+    // Go directly to the "Shotgun" API
     window.location.href = '/api/auth/logout';
   };
 
