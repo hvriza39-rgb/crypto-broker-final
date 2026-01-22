@@ -13,7 +13,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Create the token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
@@ -22,10 +21,10 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({ success: true, role: user.role });
 
-    // SET COOKIE: Strictly defined settings
+    // 🔴 CRITICAL: We strictly define the Path here
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === "production",
       sameSite: 'lax',
       path: '/',      // <--- MUST BE '/'
       maxAge: 86400,  // 1 day
@@ -33,7 +32,6 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error) {
-    console.error('Login error:', error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
 }

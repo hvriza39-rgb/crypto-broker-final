@@ -33,12 +33,30 @@ export default function Sidebar() {
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
 
   useEffect(() => setMobileOpen(false), [pathname]);
+// Inside your Sidebar component...
 
-  const handleLogout = () => {
-  // This hits GET /api/auth/logout which clears cookie + redirects server-side
-  window.location.href = "/api/auth/logout";
-};
+ // Inside your Sidebar component...
 
+  const handleLogout = async () => {
+    try {
+      // 1. Call API to kill cookie
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        cache: 'no-store' 
+      });
+      
+      // 2. Clear local storage
+      localStorage.removeItem('token');
+      
+      // 3. Force Hard Redirect to the NEW login page
+      // Using 'replace' prevents the Back button from working
+      window.location.replace('/auth/login');
+      
+    } catch (error) {
+      console.error('Logout failed', error);
+      window.location.replace('/auth/login');
+    }
+  };
 
   return (
     <>
