@@ -11,13 +11,15 @@ export async function GET(req) {
 }
 
 async function logout(req) {
-  // 1. Add ?logout=true to the URL
-  // This tells the middleware "Allow this user to see the login page, even if they have a cookie"
-  const url = new URL("/auth/login?logout=true", req.url);
-  
+  // 1. Redirect to Login WITH the signal (?logout=true)
+  // We use req.url to get the base domain automatically
+  const url = new URL(req.url);
+  url.pathname = "/auth/login";
+  url.searchParams.set("logout", "true"); // <--- This triggers the Middleware Trap
+
   const res = NextResponse.redirect(url);
 
-  // 2. Try to kill the cookie normally
+  // 2. Try to delete the cookie normally as well
   res.cookies.set("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -25,6 +27,9 @@ async function logout(req) {
     path: "/", 
     maxAge: 0,
   });
+
+  // 3. Prevent caching so the browser doesn't remember the redirect
+  res.headers.set("Cache-Control", "no-store, max-age=0");
 
   return res;
 }
