@@ -34,22 +34,11 @@ export default function Sidebar() {
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  const handleLogout = async () => {
-    console.log("LOGOUT CLICKED");
+  const handleLogout = () => {
+  // This hits GET /api/auth/logout which clears cookie + redirects server-side
+  window.location.href = "/api/auth/logout";
+};
 
-    try {
-      await fetch(`${window.location.origin}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      window.location.replace("/auth/login");
-    } catch (error) {
-      console.error("Logout failed", error);
-      window.location.replace("/auth/login");
-    }
-  };
 
   return (
     <>
