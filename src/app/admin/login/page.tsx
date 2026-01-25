@@ -34,12 +34,22 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
+      // Parse the response data
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || 'Login failed');
       }
 
-      router.push(redirect);
+      // 👇 CRITICAL FIX 1: Verify the token exists and save it securely
+      if (!data.token) {
+        throw new Error("Server error: No token received.");
+      }
+      document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+
+      // 👇 CRITICAL FIX 2: Force hard reload to bypass Next.js cache
+      window.location.href = redirect;
+
     } catch (err: any) {
       setError(err?.message || 'Login failed');
     } finally {

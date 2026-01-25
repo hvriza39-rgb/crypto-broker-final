@@ -28,12 +28,19 @@ const handleLogin = async (e: React.FormEvent) => {
       const data = await res.json();
 
       if (res.ok) {
+        // 👇 FIX: Check if a REAL token exists before proceeding
+        if (!data.token) {
+          toast.error("Server error: No token received.");
+          setLoading(false);
+          return; // Stop the function here
+        }
+
         toast.success('Login successful!');
         
-        // 👇 CRITICAL FIX: Manually set cookie so the server sees it
-        document.cookie = `token=${data.token || 'valid-token'}; path=/; max-age=86400; SameSite=Lax`;
+        // Only set the cookie if we have a real token
+        document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
 
-        // 👇 CRITICAL FIX: Force a full page reload to clear cache
+        // Force a full page reload to clear cache
         if (data.role === 'admin') {
           window.location.href = '/admin/users';
         } else {
