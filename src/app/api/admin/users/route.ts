@@ -1,38 +1,27 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 
+// Force dynamic so it doesn't cache old data
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
-    // Fetch all users
+    // Fetch all users sorted by newest first
     const users = await prisma.user.findMany({
-      orderBy: {
-        createdAt: 'desc'
-      },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         name: true,
         email: true,
-        portfolioBalance: true,
+        role: true,      // <--- We need this for the Admin Badge
         createdAt: true,
-        country: true,
-      }
+        // You can add 'balance' or 'isVerified' here if you want to see those too
+      },
     });
 
-    // Format for the Admin Dashboard Table
-    const formattedUsers = users.map(user => ({
-      id: user.id,
-      fullName: user.name,
-      email: user.email,
-      balance: user.portfolioBalance,
-      status: 'Active', // Default
-      joinedAt: user.createdAt,
-      country: user.country || 'N/A'
-    }));
-
-    return NextResponse.json({ users: formattedUsers });
-
+    return NextResponse.json(users);
   } catch (error) {
     console.error("Fetch Users Error:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
