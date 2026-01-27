@@ -27,7 +27,7 @@ export async function GET() {
         phone: true,
         country: true,
         portfolioBalance: true,
-        isVerified: true, // If you have this field
+         // If you have this field
       }
     });
 
