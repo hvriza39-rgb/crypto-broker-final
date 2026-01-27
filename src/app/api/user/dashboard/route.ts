@@ -1,91 +1,64 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '../../../../lib/prisma';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
+
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/prisma'; // 1. Use the new Prisma client
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // 2. Authentication Logic
-    // We try to get the token from the Header OR the Cookie (for better compatibility)
-    const authHeader = req.headers.get('Authorization');
-    const cookieHeader = req.headers.get('cookie');
-    
-    let token;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else if (cookieHeader) {
-      token = cookieHeader.split('token=')[1]?.split(';')[0];
-    }
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 3. Verify Token
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-      return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });
-    }
-
-    const userId = decoded.userId || decoded.id; // Handle both cases just to be safe
-
-    // 4. Get User Data using Prisma
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    
+    // 1. Fetch User Data
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        portfolioBalance: true,
+        availableBalance: true,
+      }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // 5. Get Transactions using Prisma
+    // 2. Fetch Recent Transactions (Last 5)
     const transactions = await prisma.transaction.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: 'desc' } // Prisma uses 'createdAt', not 'date'
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5
     });
 
-    // 6. Calculate Stats (Your original logic)
-    // Sum only COMPLETED deposits
-    // Note: ensure your database uses "Deposit" or "deposit" consistently (case sensitive)
-    const totalDeposited = transactions
-      .filter(t => (t.type === 'deposit' || t.type === 'Deposit') && t.status === 'Completed')
-      .reduce((acc, t) => acc + (t.amount || 0), 0);
+    // 3. Calculate Simulated Profit (Optional Demo Logic)
+    // In a real app, you would sum up deposits vs current balance.
+    // For now, let's assume 15% of the balance is profit if balance > 0.
+    const currentBalance = user.portfolioBalance || 0;
+    const estimatedProfit = currentBalance > 0 ? currentBalance * 0.15 : 0; 
+    const profitPercent = currentBalance > 0 ? "15.0" : "0";
 
-    // Logic: Profit = Current Balance - Total Deposited
-    // Mapping 'availableBalance' from schema to 'balance' for your frontend
-    const currentBalance = user.availableBalance || 0;
-    
-    const rawProfit = currentBalance - totalDeposited;
-    const safeProfit = Math.max(0, rawProfit);
-
-    // Calculate Percentage
-    const profitPercent = totalDeposited > 0 
-      ? ((safeProfit / totalDeposited) * 100).toFixed(2) 
-      : '0.00';
-
-    // 7. Return Data
+    // 4. Send Everything
     return NextResponse.json({
-      user: {
-        name: user.name,
-        email: user.email,
-        // verified: user.emailVerified ? true : false // Uncomment if you use emailVerified
-      },
+      user,
       balances: {
-        available: currentBalance,
-        profit: safeProfit,
+        available: user.availableBalance || user.portfolioBalance,
+        profit: estimatedProfit,
         profitPercent: profitPercent
       },
-      transactions
+      transactions: transactions || []
     });
 
   } catch (error) {
-    console.error("DASHBOARD_ERROR:", error);
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 });
+    console.error("Dashboard Fetch Error:", error);
+    return NextResponse.json({ error: 'Failed to load dashboard' }, { status: 500 });
   }
 }
