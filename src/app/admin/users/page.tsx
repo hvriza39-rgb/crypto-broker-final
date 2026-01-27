@@ -64,13 +64,20 @@ export default function UsersPage() {
         body: JSON.stringify({ operation, amount: parseFloat(amount) }),
       });
 
-      if (!res.ok) throw new Error('Update failed');
+      const data = await res.json(); // Get the response data
+
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+
+      // ✅ KEY FIX: Update the modal with the NEW user data from the server
+      if (data.user) {
+        setSelectedUser(data.user); 
+      }
 
       setStatus({ type: 'success', text: `Successfully ${operation === 'add' ? 'added' : 'deducted'} $${amount}` });
       setAmount('');
       fetchUsers(); // Refresh background list
-    } catch (error) {
-      setStatus({ type: 'error', text: 'Failed to update balance' });
+    } catch (error: any) {
+      setStatus({ type: 'error', text: error.message || 'Failed to update balance' });
     } finally {
       setProcessing(false);
     }

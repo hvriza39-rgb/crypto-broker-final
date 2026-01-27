@@ -1,27 +1,41 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { prisma } from '../../../../lib/prisma';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../../../../lib/prisma'; // Adjust this path to your prisma helper
+import { cookies } from 'next/headers';
+
+// Force dynamic to prevent caching old data
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const token = cookies().get('token')?.value;
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
 
     if (!token) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Decode the token to get the user ID
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     
-    // Fetch real data from MongoDB
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { email: true, role: true, name: true } // Don't send the password!
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        country: true,
+        portfolioBalance: true,
+        isVerified: true, // If you have this field
+      }
     });
 
-    return NextResponse.json(user);
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    return NextResponse.json({ user });
+
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
   }
 }
