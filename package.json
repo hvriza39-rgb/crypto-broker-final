@@ -13,6 +13,7 @@
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.0",
+    "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
     "jws": "^4.0.1",
     "lodash.includes": "^4.3.0",

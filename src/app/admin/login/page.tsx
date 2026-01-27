@@ -2,23 +2,20 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
-// app/admin/login/page.tsx
-
-
-// WITH THESE LINES:
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
 import InlineAlert from '../../../components/ui/InlineAlert';
 
-// 1. We move the main logic into this inner component
 function LoginForm() {
   const router = useRouter();
   const sp = useSearchParams();
   const redirect = sp.get('redirect') || '/admin/users';
 
-  const [email, setEmail] = useState('admin@broker.com');
-  const [password, setPassword] = useState('Admin123!');
+  // ✅ FIXED: No more hardcoded credentials!
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,27 +25,34 @@ function LoginForm() {
     setError(null);
 
     try {
-      const res = await fetch('/api/admin/auth/login', {
+      // We use the standard auth route we fixed earlier
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      // Parse the response data
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         throw new Error(data?.error || 'Login failed');
       }
 
-      // 👇 CRITICAL FIX 1: Verify the token exists and save it securely
       if (!data.token) {
         throw new Error("Server error: No token received.");
       }
+      
+      // 1. Save Token Securely
       document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+      localStorage.setItem('token', data.token); // Backup for client-side checks
 
-      // 👇 CRITICAL FIX 2: Force hard reload to bypass Next.js cache
-      window.location.href = redirect;
+      // 2. Smart Redirect based on Role
+      // If the user is an admin, send them to the users list
+      // If they are a regular user, send them to the main dashboard
+      const target = data.user?.role === 'admin' ? '/admin/users' : '/dashboard';
+      
+      // 3. Force navigation (bypass cache)
+      window.location.href = target;
 
     } catch (err: any) {
       setError(err?.message || 'Login failed');
@@ -60,7 +64,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md">
       <Card className="p-6">
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
           <div>
             <h1 className="text-xl font-semibold">Admin Login</h1>
             <p className="text-sm text-muted mt-1">Sign in to manage users and transactions.</p>
@@ -68,12 +72,18 @@ function LoginForm() {
 
           {error && <InlineAlert variant="error">{error}</InlineAlert>}
 
-          <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input 
+            label="Email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            autoComplete="email"
+          />
           <Input
             label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
 
           <Button type="submit" className="w-full" loading={loading} disabled={loading}>
@@ -85,11 +95,10 @@ function LoginForm() {
   );
 }
 
-// 2. The main page component wraps the form in Suspense
 export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg p-4">
-      <Suspense fallback={<div>Loading login...</div>}>
+      <Suspense fallback={<div className="text-white">Loading login...</div>}>
         <LoginForm />
       </Suspense>
     </div>

@@ -7,31 +7,61 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase();
 
+    // Find user
+    const user = await prisma.user.findUnique({ 
+      where: { email: normalizedEmail } 
+    });
+
+    // Verify credentials
     if (!user || !(await bcrypt.compare(password, user.hashedPassword))) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Invalid credentials' }, 
+        { status: 401 }
+      );
     }
 
+    // Generate JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
       process.env.JWT_SECRET!,
       { expiresIn: '1d' }
     );
 
-    const response = NextResponse.json({ success: true, role: user.role });
+    // ✅ FIXED: We MUST send the token in the body for the frontend to use
+    const response = NextResponse.json({ 
+      success: true,
+      token: token, // <--- ADD THIS LINE
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
 
-    // 🔴 CRITICAL: We strictly define the Path here
+    // Set Cookie (Keep this, it's perfect for Middleware)
     response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: 'lax',
-      path: '/',      // <--- MUST BE '/'
-      maxAge: 86400,  // 1 day
+      httpOnly: true,                                        
+      secure: process.env.NODE_ENV === 'production',    
+      sameSite: 'lax',                                        
+      path: '/',                                             
+      maxAge: 86400,                                         
     });
 
     return response;
+
   } catch (error) {
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    console.error('Admin login error:', error);
+    return NextResponse.json(
+      { error: 'Login failed' }, 
+      { status: 500 }
+    );
   }
 }
