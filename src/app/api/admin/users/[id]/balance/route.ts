@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-// 👇 FIX: Going up 6 levels to find 'src', then into 'lib/prisma'
-import { prisma } from '../../../../../../lib/prisma';
+import { prisma } from '../../../../../../lib/prisma'; // ✅ Always use @/lib/prisma
 
 export async function POST(
   req: Request,
@@ -11,33 +10,43 @@ export async function POST(
     const body = await req.json();
     const { operation, amount } = body;
 
+    console.log(`Updating balance for User ${id}: ${operation} ${amount}`); // Debug Log
+
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id }
-    });
+    // 1. Get current user
+    const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    let newBalance = user.portfolioBalance || 0;
+    // 2. Calculate new balance
+    // Ensure we treat existing balance as a number (0 if null)
+    const currentBalance = Number(user.portfolioBalance) || 0;
+    const changeAmount = Number(amount);
+    
+    let newBalance = currentBalance;
     
     if (operation === 'add') {
-      newBalance += amount;
+      newBalance += changeAmount;
     } else if (operation === 'subtract') {
-      newBalance -= amount;
+      newBalance -= changeAmount;
     }
 
+    // 3. Save to Database
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         portfolioBalance: newBalance,
+        // Update availableBalance too if you want them synced
         availableBalance: newBalance 
       }
     });
+
+    console.log(`New Balance Saved: ${updatedUser.portfolioBalance}`); // Debug Log
 
     return NextResponse.json({ success: true, user: updatedUser });
 
