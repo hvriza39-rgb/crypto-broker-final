@@ -9,7 +9,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // State for the Balance Modal
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -32,13 +31,11 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // Handle Balance Update (Add or Subtract)
   async function handleBalanceUpdate(operation: 'add' | 'subtract') {
     if (!selectedUser || !amount) return;
     setProcessing(true);
 
     try {
-      // 👇 Calling YOUR specific backend route
       const res = await fetch(`/api/admin/users/${selectedUser.id}/balance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +49,6 @@ export default function UsersPage() {
 
       if (!res.ok) throw new Error(data.error || 'Update failed');
 
-      // Success! Refresh the list to show new balance
       alert(`Successfully ${operation === 'add' ? 'added' : 'deducted'} $${amount}`);
       setAmount('');
       setSelectedUser(null);
@@ -90,7 +86,6 @@ export default function UsersPage() {
                 </div>
               </div>
               
-              {/* Manage Balance Button */}
               <Button 
                 onClick={() => setSelectedUser(user)} 
                 className="bg-blue-600 hover:bg-blue-500 text-sm"
@@ -114,15 +109,15 @@ export default function UsersPage() {
             </p>
             
             <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400">Amount ($)</label>
-                <Input 
-                  type="number"
-                  placeholder="0.00"
-                  value={amount} 
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
+              
+              {/* 👇 FIXED: Moved label inside the component prop */}
+              <Input 
+                label="Amount ($)"
+                type="number"
+                placeholder="0.00"
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)}
+              />
 
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <Button 
